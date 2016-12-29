@@ -1,4 +1,4 @@
-""" Code taken from
+"""Code taken from
 https://github.com/tensorflow/tensorflow/blob/master/tensorflow/examples/tutorials/deepdream/deepdream.ipynb
 Placed here for convenience only.
 """
@@ -20,7 +20,10 @@ def strip_consts(graph_def, max_const_size=32):
     return strip_def
 
 def show_graph(graph_def, max_const_size=32):
-    """Visualize TensorFlow graph."""
+    """Visualize TensorFlow graph.
+
+    Oddly, the visualization is not functional in Firefox.
+    """
     if hasattr(graph_def, 'as_graph_def'):
         graph_def = graph_def.as_graph_def()
     strip_def = strip_consts(graph_def, max_const_size=max_const_size)

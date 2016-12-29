@@ -1,2 +1,2 @@
-# tensorbayes
-Deep variational inference in tensorflow
+# TensorBayes
+Deep variational inference in TensorFlow

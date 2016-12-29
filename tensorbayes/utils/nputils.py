@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def log_sum_exp(x, axis=-1):
     a = x.max(axis=axis, keepdims=True)
     out = a + np.log(np.sum(np.exp(x - a), axis=axis, keepdims=True))
