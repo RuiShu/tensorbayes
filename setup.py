@@ -31,7 +31,6 @@ setup(
     name="tensorbayes",
     version="1.0",
     description="Deep variational inference in tensorflow.",
-    license="Copyright (c) James Brofos 2016",
     packages=find_packages(exclude="tests"),
     long_description=read("README.md"),
     cmdclass={
