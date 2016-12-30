@@ -1,5 +1,9 @@
 # Project
 *data
+.hide
+
+# emacs
+.tramp_history
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
