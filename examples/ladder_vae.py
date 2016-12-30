@@ -1,3 +1,10 @@
+"""Implementation of the Ladder Variational Autoencoder
+
+The default settings should be able to achieve a lower bound of ~85, which is
+consistent with what their implementation. Please bear in mind the set-up is a
+little different though, so direct comparison should be taken with a grain of
+salt.
+"""
 import argparse
 import numpy as np
 import tensorflow as tf
@@ -10,15 +17,13 @@ from tensorbayes.utils import progbar
 from tensorbayes.distributions import log_bernoulli_with_logits
 from tensorbayes.distributions import log_normal
 from tensorflow.examples.tutorials.mnist import input_data
-mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
-# General settings and modifications
-parser = argparse.ArgumentParser()
-parser.add_argument("-run", type=int, help="Run index")
-parser.add_argument("-bs", type=int, help="Minibatch size", default=256)
-parser.add_argument("-lr", type=float, help="learning rate", default=2e-4)
-parser.add_argument("-nonlin", type=str, help="activation function", default='elu')
-parser.add_argument("-eps", type=float, help="distribution epsilon", default=1e-5)
+parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument("-run", type=int, help="Run index. Use 0 if first run.")
+parser.add_argument("-bs", type=int, help="Minibatch size.", default=256)
+parser.add_argument("-lr", type=float, help="Learning rate.", default=2e-4)
+parser.add_argument("-nonlin", type=str, help="Activation function.", default='elu')
+parser.add_argument("-eps", type=float, help="Distribution epsilon.", default=1e-8)
 args = parser.parse_args()
 if any([k[1] is None for k in args._get_kwargs()]):
     print [k[1] for k in args._get_kwargs()]
@@ -33,7 +38,8 @@ elif args.nonlin == 'elu':
 else:
     raise Exception('Unexpected nonlinearity arg')
 log_bern = lambda x, logits: log_bernoulli_with_logits(x, logits, args.eps)
-log_norm = lambda x, mu, var: log_normal(x, mu, var, args.eps)
+log_norm = lambda x, mu, var: log_normal(x, mu, var, 0.0)
+mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
 # Convenience layers and graph blocks
 def name(index, suffix):
@@ -52,7 +58,7 @@ def encode_block(x, h_size, z_size, idx):
         h = layer(h, h_size, 'layer2', activation=activate)
     with tf.variable_scope(name(idx, 'encode/likelihood')):
         z_m = layer(h, z_size, 'mean')
-        z_v = layer(h, z_size, 'variance', activation=tf.nn.softplus)
+        z_v = layer(h, z_size, 'variance', activation=tf.nn.softplus) + args.eps
     return (z_m, z_v)
 
 def infer_block(likelihood, prior, idx):
@@ -76,7 +82,7 @@ def decode_block(z_like, z_prior, h_size, x_size, idx):
             return z, z_post, logits
         else:
             x_m = layer(h, x_size, 'mean')
-            x_v = layer(h, x_size, 'variance', activation=tf.nn.softplus)
+            x_v = layer(h, x_size, 'variance', activation=tf.nn.softplus) + args.eps
             x_prior = (x_m, x_v)
             return z, z_post, x_prior
 
@@ -106,13 +112,30 @@ with tf.name_scope('loss'):
         kl2   = -log_norm(z2, *z2_prior) + log_norm(z2, *z2_post)
     with tf.name_scope('kl3'):
         kl3   = -log_norm(z3, *z3_prior) + log_norm(z3, *z3_post)
-    loss  = tf.reduce_mean(recon + kl1 + kl2 + kl3)
+    per_sample_loss  = recon + kl1 + kl2 + kl3
+    loss = tf.reduce_mean(per_sample_loss)
 
 lr = Placeholder(None, name='lr')
 update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-with tf.control_dependencies(update_ops):
-    # Ensures that we execute the update_ops before performing the train_step
-    train_step = tf.train.AdamOptimizer(lr).minimize(loss)
+
+# optimization and gradient clipping
+optimizer = tf.train.AdamOptimizer(lr)
+
+with tf.name_scope('gradients'):
+    grads_and_vars = optimizer.compute_gradients(loss)
+    grads = [g for g, _ in grads_and_vars]
+    max_clip = 0.9
+    max_norm = 4
+    grads, global_grad_norm = tf.clip_by_global_norm(grads, max_norm)
+    clipped_grads_and_vars = []
+    for i in xrange(len(grads_and_vars)):
+        g = tf.clip_by_value(grads[i], -max_clip, max_clip)
+        v = grads_and_vars[i][1]
+        clipped_grads_and_vars += [(g, v)]
+
+    with tf.control_dependencies(update_ops):
+        # Ensures that we execute the update_ops before performing the train_step
+        train_step = optimizer.apply_gradients(clipped_grads_and_vars)
 
 sess = tf.Session()
 tf.scalar_summary('learning_rate', lr)
@@ -125,20 +148,26 @@ sess.run(tf.initialize_all_variables())
 iterep = 50000/args.bs
 for i in range(iterep * 2000):
     x_train, y_train = mnist.train.next_batch(args.bs)
-    sess.run(train_step,
-             feed_dict={'x:0': x_train,
-                        'phase:0': True,
-                        'lr:0': args.lr})
+    _, gn, l, psl = sess.run([train_step, global_grad_norm, loss, per_sample_loss],
+                        feed_dict={'x:0': x_train,
+                                   'phase:0': True,
+                                   'lr:0': args.lr})
     progbar(i, iterep)
+    if np.isnan(gn) or np.isnan(l):
+        print "NaN detected. Printing per-sample-loss."
+        print psl
+        quit()
     if (i + 1) %  iterep == 0:
         epoch = (i + 1)/iterep
         summary0, loss0 = sess.run([merged, loss], feed_dict={'x:0': mnist.train.images,
                                                               'phase:0': False,
                                                               'lr:0': args.lr})
         train_writer.add_summary(summary0, epoch)
+        train_writer.flush()
         summary1, loss1 = sess.run([merged, loss], feed_dict={'x:0': mnist.test.images,
                                                               'phase:0': False,
                                                               'lr:0': args.lr})
         test_writer.add_summary(summary1, epoch)
+        test_writer.flush()
         print ("Epoch={:d}. Learning rate={:2f}. Training loss={:.2f}. Test loss={:.2f}"
                .format(epoch, args.lr, loss0, loss1))
