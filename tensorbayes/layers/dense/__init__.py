@@ -1,1 +1,1 @@
-from .dense import Dense
+from .dense import dense

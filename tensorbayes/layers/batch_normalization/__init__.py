@@ -1,1 +1,1 @@
-from .batch_normalization import BatchNormalization
+from .batch_normalization import batch_normalization

@@ -1,7 +1,7 @@
 # Import sampling methods.
 from .sampling import sample_gaussian
 # Import TensorBayes variable and layer implementations.
-from .constant import Constant
-from .dense import Dense
-from .placeholder import Placeholder
-from .batch_normalization import BatchNormalization
+from .constant import constant
+from .dense import dense
+from .placeholder import placeholder
+from .batch_normalization import batch_normalization

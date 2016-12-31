@@ -1,1 +1,1 @@
-from .constant import Constant
+from .constant import constant
