@@ -5,9 +5,11 @@ def BatchNormalization(x, phase, scope=None, reuse=None):
     """
     with tf.name_scope(scope):
         b_tr = lambda: tf.contrib.layers.batch_norm(x, center=True, scale=True,
+                                                    decay=0.99,
                                                     is_training=True,
                                                     reuse=reuse, scope=scope)
         b_t = lambda: tf.contrib.layers.batch_norm(x, center=True, scale=True,
+                                                   decay=0.99,
                                                    is_training=False,
                                                    reuse=True, scope=scope)
         bn = tf.cond(phase, b_tr, b_t, name=scope)
@@ -19,12 +21,12 @@ def _ones_initializer(shape, dtype=tf.float32, partition_info=None):
 def _zeros_initializer(shape, dtype=tf.float32, partition_info=None):
     return tf.constant(0, dtype=dtype, shape=shape)
 
-def _assign_moving_average(orig_val, new_val, decay, name):
+def _assign_moving_average(orig_val, new_val, momentum, name):
     with tf.name_scope(name):
-        td = decay * (new_val - orig_val)
-        return tf.assign_add(orig_val, td)
+        scaled_diff = (1 - momentum) * (new_val - orig_val)
+        return tf.assign_add(orig_val, scaled_diff)
 
-def CustomBatchNormalization(x, train, eps=1e-3, decay=0.999, scope=None, reuse=None,
+def CustomBatchNormalization(x, train, eps=1e-3, momentum=0.99, scope=None, reuse=None,
                              reuse_averages=True):
     var_shape = tf.TensorShape(x.get_shape()[-1])
     with tf.variable_op_scope([x], scope, 'BatchNorm') as sc:
@@ -51,9 +53,9 @@ def CustomBatchNormalization(x, train, eps=1e-3, decay=0.999, scope=None, reuse=
         def training():
             with tf.name_scope('training'):
                 with tf.name_scope('update_moments'):
-                    update_m = _assign_moving_average(mm, m, decay,
+                    update_m = _assign_moving_average(mm, m, momentum,
                                                       name='update_mean')
-                    update_v = _assign_moving_average(mv, v, decay,
+                    update_v = _assign_moving_average(mv, v, momentum,
                                                       name='update_var')
                     tf.add_to_collection(tf.GraphKeys.UPDATE_OPS, update_m)
                     tf.add_to_collection(tf.GraphKeys.UPDATE_OPS, update_v)
