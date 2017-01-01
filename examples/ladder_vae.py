@@ -5,6 +5,7 @@ consistent with what their implementation. Please bear in mind the set-up is a
 little different though, so direct comparison should be taken with a grain of
 salt.
 """
+import os
 import argparse
 import numpy as np
 import tensorflow as tf
@@ -21,9 +22,11 @@ from tensorflow.examples.tutorials.mnist import input_data
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("-run", type=int, help="Run index. Use 0 if first run.")
 parser.add_argument("-bs", type=int, help="Minibatch size.", default=256)
-parser.add_argument("-lr", type=float, help="Learning rate.", default=2e-4)
+parser.add_argument("-lr", type=float, help="Learning rate.", default=5e-4)
 parser.add_argument("-nonlin", type=str, help="Activation function.", default='elu')
 parser.add_argument("-eps", type=float, help="Distribution epsilon.", default=1e-8)
+parser.add_argument("-save_dir", type=str, help="Save model directory.", default='/scratch/users/rshu15')
+parser.add_argument("-n_checks", type=int, help="Number of check points.", default=100)
 args = parser.parse_args()
 if any([k[1] is None for k in args._get_kwargs()]):
     print [k[1] for k in args._get_kwargs()]
@@ -36,7 +39,9 @@ if args.nonlin == 'relu':
 elif args.nonlin == 'elu':
     activate = tf.nn.elu
 else:
-    raise Exception('Unexpected nonlinearity arg')
+    raise Exception("Unexpected nonlinearity arg")
+args.save_dir = args.save_dir.rstrip('/')
+model_dir = '{:s}/results/lvae{:d}'.format(args.save_dir, args.run)
 log_bern = lambda x, logits: log_bernoulli_with_logits(x, logits, args.eps)
 log_norm = lambda x, mu, var: log_normal(x, mu, var, 0.0)
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
@@ -145,6 +150,10 @@ train_writer = tf.train.SummaryWriter('results/lvae{:d}/train'.format(args.run),
 test_writer = tf.train.SummaryWriter('results/lvae{:d}/test'.format(args.run))
 sess.run(tf.initialize_all_variables())
 
+# save model
+saver = tf.train.Saver()
+if not os.path.exists(model_dir):
+    os.mkdir(model_dir)
 iterep = 50000/args.bs
 for i in range(iterep * 2000):
     x_train, y_train = mnist.train.next_batch(args.bs)
@@ -152,11 +161,15 @@ for i in range(iterep * 2000):
                         feed_dict={'x:0': x_train,
                                    'phase:0': True,
                                    'lr:0': args.lr})
-    progbar(i, iterep)
+    prog_bar_message = "grad_norm: {:.2e}. loss: {:.2e}".format(gn, l)
+    progbar(i, iterep, prog_bar_message, bar_length=5)
     if np.isnan(gn) or np.isnan(l):
         print "NaN detected. Printing per-sample-loss."
         print psl
         quit()
+    if (i + 1) % (iterep * args.n_checks) == 0:
+        save_path = saver.save(sess, '{:s}/model.ckpt'.format(model_dir, args.run))
+        print "Saved model to {:s}".format(save_path)
     if (i + 1) %  iterep == 0:
         epoch = (i + 1)/iterep
         summary0, loss0 = sess.run([merged, loss], feed_dict={'x:0': mnist.train.images,
@@ -171,3 +184,6 @@ for i in range(iterep * 2000):
         test_writer.flush()
         print ("Epoch={:d}. Learning rate={:2f}. Training loss={:.2f}. Test loss={:.2f}"
                .format(epoch, args.lr, loss0, loss1))
+
+save_path = saver.save(sess, '{:s}/results/lvae{:d}/model.ckpt'.format(args.save_dir, args.run))
+print "Saved final model to {:s}".format(save_path)
