@@ -24,7 +24,7 @@ parser.add_argument("-run", type=int, help="Run index. Use 0 if first run.")
 parser.add_argument("-bs", type=int, help="Minibatch size.", default=256)
 parser.add_argument("-lr", type=float, help="Learning rate.", default=5e-4)
 parser.add_argument("-nonlin", type=str, help="Activation function.", default='elu')
-parser.add_argument("-eps", type=float, help="Distribution epsilon.", default=1e-8)
+parser.add_argument("-eps", type=float, help="Distribution epsilon.", default=1e-5)
 parser.add_argument("-save_dir", type=str, help="Save model directory.", default='/scratch/users/rshu15')
 parser.add_argument("-n_checks", type=int, help="Number of check points.", default=100)
 args = parser.parse_args()
@@ -41,7 +41,7 @@ elif args.nonlin == 'elu':
 else:
     raise Exception("Unexpected nonlinearity arg")
 args.save_dir = args.save_dir.rstrip('/')
-model_dir = '{:s}/results/lvae{:d}'.format(args.save_dir, args.run)
+model_dir = '{:s}/results_4/lvae{:d}'.format(args.save_dir, args.run)
 log_bern = lambda x, logits: log_bernoulli_with_logits(x, logits, args.eps)
 log_norm = lambda x, mu, var: log_normal(x, mu, var, 0.0)
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
@@ -102,9 +102,11 @@ with tf.name_scope('z0'):
 z1_like = encode_block(z0, 512, 64, idx=1)
 z2_like = encode_block(z1_like[0], 256, 32, idx=2)
 z3_like = encode_block(z2_like[0], 128, 16, idx=3)
+z4_like = encode_block(z3_like[0],  64,  8, idx=4)
 # decode
-z3_prior = (Constant(0), Constant(1))
-z3, z3_post, z2_prior = decode_block(z3_like, None, 128, 32, idx=3)
+z4_prior = (Constant(0), Constant(1))
+z4, z4_post, z3_prior = decode_block(z4_like, None,  64, 16, idx=4)
+z3, z3_post, z2_prior = decode_block(z3_like, z3_prior, 128, 32, idx=3)
 z2, z2_post, z1_prior = decode_block(z2_like, z2_prior, 256, 64, idx=2)
 z1, z1_post, z0_logits = decode_block(z1_like, z1_prior, 512, 784, idx=1)
 
@@ -117,7 +119,9 @@ with tf.name_scope('loss'):
         kl2   = -log_norm(z2, *z2_prior) + log_norm(z2, *z2_post)
     with tf.name_scope('kl3'):
         kl3   = -log_norm(z3, *z3_prior) + log_norm(z3, *z3_post)
-    per_sample_loss  = recon + kl1 + kl2 + kl3
+    with tf.name_scope('kl4'):
+        kl4   = -log_norm(z4, *z4_prior) + log_norm(z4, *z4_post)
+    per_sample_loss  = recon + kl1 + kl2 + kl3 + kl4
     loss = tf.reduce_mean(per_sample_loss)
 
 lr = Placeholder(None, name='lr')
@@ -146,14 +150,14 @@ sess = tf.Session()
 tf.scalar_summary('learning_rate', lr)
 tf.scalar_summary('loss', loss)
 merged = tf.merge_all_summaries()
-train_writer = tf.train.SummaryWriter('results/lvae{:d}/train'.format(args.run), sess.graph)
-test_writer = tf.train.SummaryWriter('results/lvae{:d}/test'.format(args.run))
+train_writer = tf.train.SummaryWriter('results_4/lvae{:d}/train'.format(args.run), sess.graph)
+test_writer = tf.train.SummaryWriter('results_4/lvae{:d}/test'.format(args.run))
 sess.run(tf.initialize_all_variables())
 
 # save model
 saver = tf.train.Saver()
 if not os.path.exists(model_dir):
-    os.mkdir(model_dir)
+    os.makedirs(model_dir)
 iterep = 50000/args.bs
 for i in range(iterep * 2000):
     x_train, y_train = mnist.train.next_batch(args.bs)
@@ -185,5 +189,5 @@ for i in range(iterep * 2000):
         print ("Epoch={:d}. Learning rate={:2f}. Training loss={:.2f}. Test loss={:.2f}"
                .format(epoch, args.lr, loss0, loss1))
 
-save_path = saver.save(sess, '{:s}/results/lvae{:d}/model.ckpt'.format(args.save_dir, args.run))
+save_path = saver.save(sess, '{:s}/model.ckpt'.format(model_dir, args.run))
 print "Saved final model to {:s}".format(save_path)
