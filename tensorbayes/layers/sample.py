@@ -1,10 +1,10 @@
 import tensorflow as tf
 
-def GaussianSample(mean, var, scope):
+def gaussian_sample(mean, var, scope):
     with tf.name_scope(scope):
         return tf.random_normal(tf.shape(mean), mean, tf.sqrt(var))
 
-def Duplicate(x, n_iw=1, n_mc=1, scope=None):
+def duplicate(x, n_iw=1, n_mc=1, scope=None):
     """ Duplication function adds samples according to n_iw and n_mc.
 
     This function is specifically for importance weighting and monte carlo
@@ -16,3 +16,6 @@ def Duplicate(x, n_iw=1, n_mc=1, scope=None):
         y = tf.tile(y, [n_iw, n_mc, 1] + [1] * len(sample_shape))
         y = tf.reshape(y, [-1] + sample_shape)
     return y
+
+GaussianSample = gaussian_sample
+Duplicate = duplicate

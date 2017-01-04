@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-def BatchNormalization(x, phase, scope=None, reuse=None):
+def batch_norm(x, phase, scope=None, reuse=None):
     """ Batch normalization for TensorFlow r0.9
     """
     with tf.name_scope(scope):
@@ -26,7 +26,7 @@ def _assign_moving_average(orig_val, new_val, momentum, name):
         scaled_diff = (1 - momentum) * (new_val - orig_val)
         return tf.assign_add(orig_val, scaled_diff)
 
-def CustomBatchNormalization(x, train, eps=1e-3, momentum=0.99, scope=None, reuse=None,
+def custom_batch_norm(x, train, eps=1e-3, momentum=0.99, scope=None, reuse=None,
                              reuse_averages=True):
     var_shape = tf.TensorShape(x.get_shape()[-1])
     with tf.variable_op_scope([x], scope, 'BatchNorm') as sc:
@@ -66,3 +66,6 @@ def CustomBatchNormalization(x, train, eps=1e-3, momentum=0.99, scope=None, reus
                 return tf.nn.batch_normalization(x, mm, mv, beta, gamm, eps,
                                                  name='pop_normalized')
         return tf.cond(train, training, testing, name='batch_pop_switch')
+
+BatchNormalization = batch_norm
+CustomBatchNormalization = custom_batch_norm
