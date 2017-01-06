@@ -1,19 +1,10 @@
 import tensorflow as tf
 
 def batch_norm(x, phase, scope=None, reuse=None):
-    """ Batch normalization for TensorFlow r0.9
-    """
-    with tf.name_scope(scope):
-        b_tr = lambda: tf.contrib.layers.batch_norm(x, center=True, scale=True,
-                                                    decay=0.99,
-                                                    is_training=True,
-                                                    reuse=reuse, scope=scope)
-        b_t = lambda: tf.contrib.layers.batch_norm(x, center=True, scale=True,
-                                                   decay=0.99,
-                                                   is_training=False,
-                                                   reuse=True, scope=scope)
-        bn = tf.cond(phase, b_tr, b_t, name=scope)
-    return bn
+    return tf.contrib.layers.batch_norm(x, center=True, scale=True,
+                                        decay=0.99,
+                                        is_training=phase,
+                                        reuse=reuse, scope='bn')
 
 def _ones_initializer(shape, dtype=tf.float32, partition_info=None):
     return tf.constant(1, dtype=dtype, shape=shape)
@@ -26,12 +17,14 @@ def _assign_moving_average(orig_val, new_val, momentum, name):
         scaled_diff = (1 - momentum) * (new_val - orig_val)
         return tf.assign_add(orig_val, scaled_diff)
 
-def custom_batch_norm(x, train, eps=1e-3, momentum=0.99, scope=None, reuse=None,
-                             reuse_averages=True):
+def custom_batch_norm(x, train, eps=1e-3, momentum=0.99, scope=None,
+                      reuse=None, reuse_averages=True):
     var_shape = tf.TensorShape(x.get_shape()[-1])
-    with tf.variable_op_scope([x], scope, 'BatchNorm') as sc:
+    with tf.variable_scope(scope, 'BatchNorm') as sc:
         if not reuse_averages:
-            assert not tf.get_variable_scope().reuse, "Cannot create stream-unique averages if reuse flag is ON"
+            if tf.get_variable_scope().reuse:
+                raise Exception("Cannot create stream-unique averages if "
+                                "reuse flag is ON")
             i = len(tf.get_collection(tf.GraphKeys.VARIABLES,
                                       scope='{:s}/moving_mean'.format(sc.name)))
             mm = tf.get_variable('moving_mean/v{:d}'.format(i), var_shape,
