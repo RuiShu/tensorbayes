@@ -58,8 +58,8 @@ def infer_block(likelihood, prior, idx):
             posterior = likelihood
         else:
             args = likelihood + prior
-            posterior = GaussianUpdate(*args, scope='pwm')
-        z = GaussianSample(*posterior, scope='sample')
+            posterior = gaussian_update(*args, scope='pwm')
+        z = gaussian_sample(*posterior, scope='sample')
     return z, posterior
 
 def decode_block(z_like, z_prior, h_size, x_size, idx):
@@ -69,7 +69,7 @@ def decode_block(z_like, z_prior, h_size, x_size, idx):
         h = dense(h, h_size, 'layer2', activation=activate)
     with tf.variable_scope(name(idx - 1, 'decode/prior')):
         if (idx - 1) == 0:
-            logits = dense(h, 784, 'logits', bn=False)
+            logits = dense(h, x_size, 'logits', bn=False)
             return z, z_post, logits
         else:
             x_m = dense(h, x_size, 'mean')
@@ -79,9 +79,9 @@ def decode_block(z_like, z_prior, h_size, x_size, idx):
 
 # Ladder VAE set-up
 tf.reset_default_graph()
-phase = Placeholder(None, tf.bool, name='phase')
-lr = Placeholder(None, name='lr')
-x = Placeholder((None, 784), name='x')
+phase = placeholder(None, tf.bool, name='phase')
+lr = placeholder(None, name='lr')
+x = placeholder((None, 784), name='x')
 with tf.name_scope('z0'):
     z0 = tf.cast(tf.greater(x, tf.random_uniform(tf.shape(x), 0, 1)),
                  tf.float32)
@@ -93,7 +93,7 @@ with arg_scope([dense], bn=True, phase=phase):
     z3_like = encode_block(z2_like[0], 128, 16, idx=3)
     z4_like = encode_block(z3_like[0],  64,  8, idx=4)
     # decode
-    z4_prior = (Constant(0), Constant(1))
+    z4_prior = (constant(0), constant(1))
     z4, z4_post, z3_prior = decode_block(z4_like, None,  64, 16, idx=4)
     z3, z3_post, z2_prior = decode_block(z3_like, z3_prior, 128, 32, idx=3)
     z2, z2_post, z1_prior = decode_block(z2_like, z2_prior, 256, 64, idx=2)
@@ -159,7 +159,7 @@ for i in range(iterep * 2000):
                                         'phase:0': False,
                                         'lr:0': args.lr})
         writer.write(tensor_values=tr_values,
-                     values = te_values + [epoch])
+                     values=te_values + [epoch])
         if epoch % args.n_checks == 0:
             path = saver.save(sess, '{:s}/model.ckpt'
                               .format(model_dir, args.run))
