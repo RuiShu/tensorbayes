@@ -6,8 +6,8 @@ def log_sum_exp(x, axis=-1):
     return np.squeeze(out, axis=axis)
 
 def kl_normal(qm, qv, pm, pv):
-    (qm, qv), (pm, pv) = q, p
-    return 0.5 * np.sum(np.log(pv) - np.log(qv) + qv/pv + np.square(qm - pm) / pv - 1, axis=-1)
+    return 0.5 * np.sum(np.log(pv) - np.log(qv) + qv/pv +
+                        np.square(qm - pm) / pv - 1, axis=-1)
 
 def convert_to_ssl(x, y, n_labels, n_classes):
     if y.shape[-1] == n_classes:
@@ -25,3 +25,11 @@ def convert_to_ssl(x, y, n_labels, n_classes):
     x_label = np.array(x_label).reshape(-1, *x.shape[1:])
     y_label = np.array(y_label).reshape(-1, *y.shape[1:])
     return x_label, y_label
+
+def conv_shape(x, k, s, p):
+    if p == 'SAME':
+        return np.ceil(float(x) / float(s))
+    elif p == 'VALID':
+        return np.ceil(float(x - k + 1) / float(s))
+    else:
+        raise Exception('Unknown padding type')
