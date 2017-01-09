@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.contrib.framework import add_arg_scope
-from normalization import *
+from .normalization import *
 from tensorflow.contrib.layers import xavier_initializer
 
 def constant(value, name=None):
