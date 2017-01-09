@@ -73,6 +73,6 @@ class FileWriter(object):
         self.f.flush()
         if self.pipe:
             if is_summary:
-                print self.header
-            print string
+                print(self.header)
+            print(string)
 
