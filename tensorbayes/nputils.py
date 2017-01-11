@@ -44,3 +44,7 @@ def conv_shape(x, k, s, p):
         return np.ceil(float(x - k + 1) / float(s))
     else:
         raise Exception('Unknown padding type')
+
+def split(arr, size):
+    for i in range(0, len(arr), size):
+        yield arr[i:i + size]
