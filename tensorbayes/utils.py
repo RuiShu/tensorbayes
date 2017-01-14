@@ -44,15 +44,15 @@ class FileWriter(object):
             # write args
             v_dict = vars(self.args)
             string = '# ArgParse Values:'
-            self._write(string, is_summary=False)
+            self._write(string)
             for k in v_dict:
                 string = '# {:s}: {:s}'.format(str(k), str(v_dict[k]))
-                self._write(string, is_summary=False)
+                self._write(string)
 
     def initialize(self):
         # create header name
         self.header = ','.join(self.tensor_names + self.names)
-        self._write(self.header, is_summary=False)
+        self._write(self.header)
 
     def add_var(self, name, var_format, tensor=None):
         if tensor is None:
@@ -66,13 +66,12 @@ class FileWriter(object):
     def write(self, tensor_values=[], values=[]):
         values = tensor_values + values
         string = ','.join(self.tensor_formats + self.formats).format(*values)
-        self._write(string)
+        self._write(string, is_summary=True)
 
-    def _write(self, string, is_summary=True):
+    def _write(self, string, is_summary=False):
         self.f.write(string + '\n')
         self.f.flush()
         if self.pipe:
             if is_summary:
                 print(self.header)
             print(string)
-
