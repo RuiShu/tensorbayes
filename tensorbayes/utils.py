@@ -2,18 +2,19 @@ import os
 import sys
 import time
 
-def progbar(i, iter_per_epoch, message='', bar_length=50):
+def progbar(i, iter_per_epoch, message='', bar_length=50, display=True):
     j = (i % iter_per_epoch) + 1
-    perc = int(100. * j / iter_per_epoch)
-    prog = ''.join(['='] * (bar_length * perc / 100))
-    template = "\r[{:" + str(bar_length) + "s}] {:3d}%. {:s}"
-    string = template.format(prog, perc, message)
-    sys.stdout.write(string)
-    sys.stdout.flush()
     end_epoch = j == iter_per_epoch
-    if end_epoch:
-        sys.stdout.write('\r{:100s}\r'.format(''))
+    if display:
+        perc = int(100. * j / iter_per_epoch)
+        prog = ''.join(['='] * (bar_length * perc / 100))
+        template = "\r[{:" + str(bar_length) + "s}] {:3d}%. {:s}"
+        string = template.format(prog, perc, message)
+        sys.stdout.write(string)
         sys.stdout.flush()
+        if end_epoch:
+            sys.stdout.write('\r{:100s}\r'.format(''))
+            sys.stdout.flush()
     return end_epoch, (i + 1)/iter_per_epoch
 
 class FileWriter(object):

@@ -28,3 +28,18 @@ def clip_gradients(optimizer, loss, max_clip=0.9, max_norm=4):
         v = grads_and_vars[i][1]
         clipped_grads_and_vars += [(g, v)]
     return clipped_grads_and_vars, global_grad_norm
+
+class Function(object):
+    def __init__(self, sess, inputs, outputs):
+        self.inputs = inputs
+        self.outputs = outputs
+        self.sess = sess
+
+    def __call__(self, *args):
+        feeds = {}
+        for (i, arg) in enumerate(args):
+            feeds[self.inputs[i]] = arg
+        return self.sess.run(self.outputs, feeds)
+
+def function(sess, inputs, outputs):
+    return Function(sess, inputs, outputs)
