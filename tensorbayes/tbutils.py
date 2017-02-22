@@ -20,6 +20,8 @@ def cross_entropy_with_logits(logits, targets):
 
 def clip_gradients(optimizer, loss, max_clip=0.9, max_norm=4):
     grads_and_vars = optimizer.compute_gradients(loss)
+    # Filter for non-None grads
+    grads_and_vars = [gv for gv in grads_and_vars if gv[0] is not None]
     grads = [g for g, _ in grads_and_vars]
     grads, global_grad_norm = tf.clip_by_global_norm(grads, max_norm)
     clipped_grads_and_vars = []
