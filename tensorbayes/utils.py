@@ -40,7 +40,6 @@ class FileWriter(object):
             os.makedirs(log_dir)
         self.f = open(self.log_file, 'w', 0)
         if args is not None:
-            self.args = args
             # create file
             # write args
             v_dict = vars(self.args)
@@ -49,6 +48,13 @@ class FileWriter(object):
             for k in v_dict:
                 string = '# {:s}: {:s}'.format(str(k), str(v_dict[k]))
                 self._write(string)
+
+    @staticmethod
+    def list_args(args):
+        v_dict = vars(args)
+        print '# ArgParse Values:'
+        for k in v_dict:
+            print '# {:s}: {:s}'.format(str(k), str(v_dict[k]))
 
     def initialize(self):
         # create header name
@@ -67,12 +73,12 @@ class FileWriter(object):
     def write(self, tensor_values=[], values=[]):
         values = tensor_values + values
         string = ','.join(self.tensor_formats + self.formats).format(*values)
-        self._write(string, is_summary=True)
+        self._write(string, is_summary=True, pipe=True)
 
-    def _write(self, string, is_summary=False):
+    def _write(self, string, is_summary=False, pipe=False):
         self.f.write(string + '\n')
         self.f.flush()
-        if self.pipe:
+        if self.pipe and pipe:
             if is_summary:
                 print(self.header)
             print(string)
