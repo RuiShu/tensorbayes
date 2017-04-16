@@ -37,13 +37,24 @@ def convert_to_ssl(x, y, n_labels, n_classes, complement=False):
     else:
         return x_label, y_label, x, y
 
-def conv_shape(x, k, s, p):
+def conv_shape(x, k, s, p, ceil=True):
     if p == 'SAME':
-        return np.ceil(float(x) / float(s))
+        output = float(x) / float(s)
     elif p == 'VALID':
-        return np.ceil(float(x - k + 1) / float(s))
+        output = float(x - k + 1) / float(s)
     else:
         raise Exception('Unknown padding type')
+    if ceil:
+        return int(np.ceil(output))
+    else:
+        assert output.is_integer(), 'Does not satisfy conv int requirement'
+        return int(output)
+
+def conv_shape_list(x, ksp_list, ceil=True):
+    x_list = [x]
+    for k, s, p in ksp_list:
+        x_list.append(conv_shape(x_list[-1], k, s, p, ceil))
+    return x_list
 
 def split(arr, size):
     for i in range(0, len(arr), size):

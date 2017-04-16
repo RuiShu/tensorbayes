@@ -19,7 +19,7 @@ def progbar(i, iter_per_epoch, message='', bar_length=50, display=True):
 
 class FileWriter(object):
     def __init__(self, log_file, args=None,
-                 overwrite=False, pipe_to_sys=False):
+                 overwrite=False, pipe_to_sys=True):
         self.written = False
         self.log_file = log_file
         self.pipe = pipe_to_sys
