@@ -1,11 +1,10 @@
 """Setup file for tensorbayes
 
 For easy installation and uninstallation, do the following.
-INSTALL:
+MANUAL INSTALL:
 python setup.py install --record files.txt
 UNINSTALL:
 cat files.txt | xargs rm -r
-Pip installation will be made available soon.
 """
 
 from setuptools import setup, find_packages
