@@ -18,12 +18,14 @@ def dense(x,
           reuse=None,
           bn=False,
           phase=None):
-    # convert x to 2-D tensor
-    dim = np.prod(x._shape_as_list()[1:])
-    x = tf.reshape(x, [-1, dim])
 
-    weights_shape = (x.get_shape().dims[-1], num_outputs)
     with tf.variable_scope(scope, 'dense', reuse=reuse):
+        # convert x to 2-D tensor
+        dim = np.prod(x._shape_as_list()[1:])
+        x = tf.reshape(x, [-1, dim])
+        weights_shape = (x.get_shape().dims[-1], num_outputs)
+
+        # dense layer
         weights = tf.get_variable('weights', weights_shape,
                                   initializer=xavier_initializer())
         biases = tf.get_variable('biases', [num_outputs],
