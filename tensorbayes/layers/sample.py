@@ -23,7 +23,8 @@ def duplicate(x, n_iw=1, n_mc=1, scope=None):
     with tf.variable_scope(scope, 'duplicate'):
         sample_shape = x._shape_as_list()[1:]
         y = tf.reshape(x, [1, 1, -1] + sample_shape)
-        y = tf.tile(y, [n_iw, n_mc, 1] + [1] * len(sample_shape))
+        multiplier = tf.stack([n_iw, n_mc, 1] + [1] * len(sample_shape))
+        y = tf.tile(y, multiplier)
         y = tf.reshape(y, [-1] + sample_shape)
     return y
 
