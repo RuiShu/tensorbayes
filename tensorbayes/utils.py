@@ -83,15 +83,5 @@ class FileWriter(object):
                 print(self.header)
             print(string)
 
-class TensorDict(object):
-    def __init__(self, d={}):
-        self.__dict__ = dict(d)
-
-    def __iter__(self):
-        return iter(self.__dict__)
-
-    def __contains__(self, key):
-        return key in self.__dict__
-
-    def __getitem__(self, key):
-        return self.__dict__[key]
+# Retaining for backwards compatibility
+from tfutils import TensorDict
