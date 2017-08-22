@@ -4,8 +4,8 @@ from .normalization import *
 from tensorflow.contrib.layers import xavier_initializer
 import numpy as np
 
-def constant(value, name=None):
-    return tf.constant(value, 'float32', name=name)
+def constant(value, dtype='float32', name=None):
+    return tf.constant(value, dtype, name=name)
 
 def placeholder(shape, dtype='float32', name=None):
     return tf.placeholder(dtype, shape, name=name)
@@ -17,6 +17,7 @@ def dense(x,
           activation=None,
           reuse=None,
           bn=False,
+          post_bn=False,
           phase=None):
 
     with tf.variable_scope(scope, 'dense', reuse=reuse):
@@ -33,6 +34,7 @@ def dense(x,
         output = tf.matmul(x, weights) + biases
         if bn: output = batch_norm(output, phase, scope='bn')
         if activation: output = activation(output)
+        if post_bn: output = batch_norm(output, phase, scope='post_bn')
     return output
 
 @add_arg_scope
@@ -43,6 +45,7 @@ def conv2d(x,
            padding='SAME',
            activation=None,
            bn=False,
+           post_bn=False,
            phase=None,
            scope=None,
            reuse=None):
@@ -64,6 +67,7 @@ def conv2d(x,
         output += biases
         if bn: output = batch_norm(output, phase, scope='bn')
         if activation: output = activation(output)
+        if post_bn: output = batch_norm(output, phase, scope='post_bn')
     return output
 
 @add_arg_scope
@@ -76,17 +80,10 @@ def conv2d_transpose(x,
                      output_like=None,
                      activation=None,
                      bn=False,
+                     post_bn=False,
                      phase=None,
                      scope=None,
                      reuse=None):
-    # Get output shape both as tensor obj and as list
-    if output_like is None:
-        bs = tf.shape(x)[0]
-        _output_shape = tf.pack([bs] + output_shape[1:])
-    else:
-        _output_shape = tf.shape(output_like)
-        output_shape = output_like.get_shape()
-
     # Convert int to list
     kernel_size = [kernel_size] * 2 if isinstance(kernel_size, int) else kernel_size
     strides = [strides] * 2 if isinstance(strides, int) else strides
@@ -94,6 +91,20 @@ def conv2d_transpose(x,
     # Convert list to valid list
     kernel_size = list(kernel_size) + [num_outputs, x.get_shape().dims[-1]]
     strides = [1] + list(strides) + [1]
+
+    # Get output shape both as tensor obj and as list
+    if output_shape:
+        bs = tf.shape(x)[0]
+        _output_shape = tf.stack([bs] + output_shape[1:])
+    elif output_like:
+        _output_shape = tf.shape(output_like)
+        output_shape = output_like.get_shape()
+    else:
+        assert padding == 'SAME', "Shape inference only applicable with padding is SAME"
+        bs, h, w, c = x._shape_as_list()
+        bs_tf = tf.shape(x)[0]
+        _output_shape = tf.stack([bs_tf, strides[1] * h, strides[2] * w, num_outputs])
+        output_shape = [bs, strides[1] * h, strides[2] * w, num_outputs]
 
     # Transposed conv operation
     with tf.variable_scope(scope, 'conv2d', reuse=reuse):
@@ -107,6 +118,7 @@ def conv2d_transpose(x,
         output.set_shape(output_shape)
         if bn: output = batch_norm(output, phase, scope='bn')
         if activation: output = activation(output)
+        if post_bn: output = batch_norm(output, phase, scope='post_bn')
     return output
 
 @add_arg_scope
