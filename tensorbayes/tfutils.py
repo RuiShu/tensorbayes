@@ -1,5 +1,13 @@
 import tensorflow as tf
 
+def accuracy(x, y, scope=None):
+    with tf.variable_scope(scope, 'acc') as sc:
+        x = tf.argmax(x, 1)
+        y = tf.argmax(y, 1)
+        _, acc = tf.metrics.accuracy(x, y)
+        acc_init = tf.variables_initializer(tf.get_collection('local_variables', sc.name))
+    return acc, acc_init
+
 def reduce_sum_sq(x, axis=None, keep_dims=False, name=None):
     with tf.name_scope(name):
         return tf.reduce_sum(tf.square(x), axis=axis, keep_dims=keep_dims)

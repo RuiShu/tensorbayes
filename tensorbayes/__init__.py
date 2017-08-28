@@ -3,6 +3,7 @@ from . import layers
 from . import layers as nn
 from . import utils
 from . import nputils
+from . import tbutils
 from . import tfutils
 from . import distributions
 from .utils import FileWriter
