@@ -191,8 +191,3 @@ def gaussian_update(zm1, zv1,
         with tf.name_scope('mean'):
             zm = (zm1 * zp1 + zm2 * zp2) * zv
     return zm, zv
-
-Constant = constant
-Placeholder = placeholder
-Dense = dense
-GaussianUpdate = gaussian_update

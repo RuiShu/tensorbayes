@@ -27,7 +27,3 @@ def duplicate(x, n_iw=1, n_mc=1, scope=None):
         y = tf.tile(y, multiplier)
         y = tf.reshape(y, [-1] + sample_shape)
     return y
-
-GaussianSample = gaussian_sample
-BernoulliSample = bernoulli_sample
-Duplicate = duplicate
