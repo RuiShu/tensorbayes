@@ -17,10 +17,12 @@ def batch_norm(x,
                reuse=None):
 
     C = x._shape_as_list()[-1]
+    ndim = len(x.shape)
+    var_shape = [1] * (ndim - 1) + [C]
 
     with tf.variable_scope(scope, 'batch_norm', reuse=reuse):
         def training():
-            m, v = tf.nn.moments(x, [0, 1, 2], keep_dims=True)
+            m, v = tf.nn.moments(x, range(ndim - 1), keep_dims=True)
             update_m = _assign_moving_average(moving_m, m, momentum, 'update_mean')
             update_v = _assign_moving_average(moving_v, v, momentum, 'update_var')
             tf.add_to_collection('update_ops', update_m)
@@ -31,16 +33,19 @@ def batch_norm(x,
             return moving_m, moving_v
 
         # Get mean and variance, normalize input
-        moving_m = tf.get_variable('mean', C, initializer=tf.zeros_initializer)
-        moving_v = tf.get_variable('var', C, initializer=tf.ones_initializer)
-        m, v = tf.cond(phase, training, testing)
+        moving_m = tf.get_variable('mean', var_shape, initializer=tf.zeros_initializer)
+        moving_v = tf.get_variable('var', var_shape, initializer=tf.ones_initializer)
+        if isinstance(phase, bool):
+            m, v = training() if phase else testing()
+        else:
+            m, v = tf.cond(phase, training, testing)
         output = (x - m) * tf.rsqrt(v + eps)
 
         if scale:
-            output *= tf.get_variable('gamma', C, initializer=tf.ones_initializer)
+            output *= tf.get_variable('gamma', var_shape, initializer=tf.ones_initializer)
 
         if shift:
-            output += tf.get_variable('beta', C, initializer=tf.zeros_initializer)
+            output += tf.get_variable('beta', var_shape, initializer=tf.zeros_initializer)
 
     return output
 
@@ -52,6 +57,7 @@ def instance_norm(x,
                   scope=None,
                   reuse=None):
 
+    # Expect a 4-D Tensor
     C = x._shape_as_list()[-1]
 
     with tf.variable_scope(scope, 'instance_norm', reuse=reuse):
@@ -77,8 +83,8 @@ def context_shift(x,
 
     B = context._shape_as_list()[-1]
     C = x._shape_as_list()[-1]
-    ndim = len(x.shape) - 2
-    var_shape = [B] + [1] * ndim + [C]
+    ndim = len(x.shape)
+    var_shape = [B] + [1] * (ndim - 2) + [C]
 
     with tf.variable_scope(scope, 'context_shift', reuse=reuse):
         output = x
@@ -105,8 +111,8 @@ def lookup_shift(x,
 
     B = context._shape_as_list()[-1]
     C = x._shape_as_list()[-1]
-    ndim = len(x.shape) - 2
-    var_shape = [B] + [1] * ndim + [C]
+    ndim = len(x.shape)
+    var_shape = [B] + [1] * (ndim - 2) + [C]
 
     with tf.variable_scope(scope, 'lookup_shift', reuse=reuse):
         output = x
