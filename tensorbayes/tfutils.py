@@ -27,12 +27,10 @@ def log_sum_exp(x, axis=1, keep_dims=False):
         else:
             return tf.squeeze(out, [axis])
 
-def cross_entropy_with_logits(logits, targets):
-    """
-    TODO: make this fn numerically stable.
-    """
+def softmax_cross_entropy_with_two_logits(logits, labels):
+    p = tf.nn.softmax(labels)
     log_q = tf.nn.log_softmax(logits)
-    return -tf.reduce_sum(targets * log_q, 1)
+    return -tf.reduce_sum(p * log_q, 1)
 
 def clip_gradients(optimizer, loss, max_clip=0.9, max_norm=4):
     grads_and_vars = optimizer.compute_gradients(loss)
