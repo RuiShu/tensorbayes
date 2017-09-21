@@ -13,6 +13,7 @@ def batch_norm(x,
                scale=True,
                momentum=0.99,
                eps=1e-3,
+               internal_update=False,
                scope=None,
                reuse=None):
 
@@ -27,19 +28,27 @@ def batch_norm(x,
             update_v = _assign_moving_average(moving_v, v, momentum, 'update_var')
             tf.add_to_collection('update_ops', update_m)
             tf.add_to_collection('update_ops', update_v)
-            return m, v
+
+            if internal_update:
+                with tf.control_dependencies([update_m, update_v]):
+                    output = (x - m) * tf.rsqrt(v + eps)
+            else:
+                output = (x - m) * tf.rsqrt(v + eps)
+            return output
 
         def testing():
-            return moving_m, moving_v
+            m, v = moving_m, moving_v
+            output = (x - m) * tf.rsqrt(v + eps)
+            return output
 
         # Get mean and variance, normalize input
-        moving_m = tf.get_variable('mean', var_shape, initializer=tf.zeros_initializer)
-        moving_v = tf.get_variable('var', var_shape, initializer=tf.ones_initializer)
+        moving_m = tf.get_variable('mean', var_shape, initializer=tf.zeros_initializer, trainable=False)
+        moving_v = tf.get_variable('var', var_shape, initializer=tf.ones_initializer, trainable=False)
+
         if isinstance(phase, bool):
-            m, v = training() if phase else testing()
+            output = training() if phase else testing()
         else:
-            m, v = tf.cond(phase, training, testing)
-        output = (x - m) * tf.rsqrt(v + eps)
+            output = tf.cond(phase, training, testing)
 
         if scale:
             output *= tf.get_variable('gamma', var_shape, initializer=tf.ones_initializer)
