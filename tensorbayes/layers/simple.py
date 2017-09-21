@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.contrib.framework import add_arg_scope
 from .normalization import *
-from tensorflow.contrib.layers import xavier_initializer
+from tensorflow.contrib.layers import variance_scaling_initializer
 import numpy as np
 
 def constant(value, dtype='float32', name=None):
@@ -28,13 +28,14 @@ def dense(x,
 
         # dense layer
         weights = tf.get_variable('weights', weights_shape,
-                                  initializer=xavier_initializer())
+                                  initializer=variance_scaling_initializer())
         biases = tf.get_variable('biases', [num_outputs],
                                  initializer=tf.zeros_initializer)
         output = tf.matmul(x, weights) + biases
         if bn: output = batch_norm(output, phase, scope='bn')
         if activation: output = activation(output)
         if post_bn: output = batch_norm(output, phase, scope='post_bn')
+
     return output
 
 @add_arg_scope
@@ -60,7 +61,7 @@ def conv2d(x,
     # Conv operation
     with tf.variable_scope(scope, 'conv2d', reuse=reuse):
         kernel = tf.get_variable('weights', kernel_size,
-                                 initializer=xavier_initializer())
+                                 initializer=variance_scaling_initializer())
         biases = tf.get_variable('biases', [num_outputs],
                                  initializer=tf.zeros_initializer)
         output = tf.nn.conv2d(x, kernel, strides, padding, name='conv2d')
@@ -68,6 +69,7 @@ def conv2d(x,
         if bn: output = batch_norm(output, phase, scope='bn')
         if activation: output = activation(output)
         if post_bn: output = batch_norm(output, phase, scope='post_bn')
+
     return output
 
 @add_arg_scope
@@ -109,7 +111,7 @@ def conv2d_transpose(x,
     # Transposed conv operation
     with tf.variable_scope(scope, 'conv2d', reuse=reuse):
         kernel = tf.get_variable('weights', kernel_size,
-                                 initializer=xavier_initializer())
+                                 initializer=variance_scaling_initializer())
         biases = tf.get_variable('biases', [num_outputs],
                                  initializer=tf.zeros_initializer)
         output = tf.nn.conv2d_transpose(x, kernel, _output_shape, strides,
@@ -119,6 +121,7 @@ def conv2d_transpose(x,
         if bn: output = batch_norm(output, phase, scope='bn')
         if activation: output = activation(output)
         if post_bn: output = batch_norm(output, phase, scope='post_bn')
+
     return output
 
 @add_arg_scope
@@ -132,6 +135,7 @@ def upsample(x,
 
     with tf.variable_scope(scope, 'upsample'):
         output = tf.image.resize_nearest_neighbor(x, [h, w])
+
     return output
 
 @add_arg_scope
@@ -150,14 +154,20 @@ def max_pool(x,
 
     with tf.variable_scope(scope, 'max_pool'):
         output = tf.nn.max_pool(x, kernel_size, strides, padding=padding)
+
     return output
 
 @add_arg_scope
 def avg_pool(x,
-             kernel_size,
-             strides,
+             kernel_size=None,
+             strides=None,
              padding='SAME',
+             global_pool=False,
              scope=None):
+
+    if global_pool:
+        return tf.reduce_mean(x, axis=[1, 2])
+
     # Convert int to list
     kernel_size = [kernel_size] * 2 if isinstance(kernel_size, int) else kernel_size
     strides = [strides] * 2 if isinstance(strides, int) else strides
@@ -168,6 +178,7 @@ def avg_pool(x,
 
     with tf.variable_scope(scope, 'avg_pool'):
         output = tf.nn.avg_pool(x, kernel_size, strides, padding=padding)
+
     return output
 
 @add_arg_scope
