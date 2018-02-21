@@ -7,7 +7,7 @@ from . import tbutils
 from . import tfutils
 from . import distributions
 from .utils import FileWriter
-from .tfutils import function, TensorDict
+from .tfutils import growth_config, function, TensorDict
 
 if 'ipykernel' in sys.argv[0]:
     from . import nbutils

@@ -59,3 +59,15 @@ def conv_shape_list(x, ksp_list, ceil=True):
 def split(arr, size):
     for i in range(0, len(arr), size):
         yield arr[i:i + size]
+
+class FixedSeed:
+    def __init__(self, seed):
+        self.seed = seed
+        self.state = None
+
+    def __enter__(self):
+        self.state = np.random.get_state()
+        np.random.seed(self.seed)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        np.random.set_state(self.state)

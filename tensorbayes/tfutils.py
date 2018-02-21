@@ -75,3 +75,8 @@ class TensorDict(object):
 
     def __repr__(self):
         return repr(self.__dict__)
+
+def growth_config(*args, **kwargs):
+    config = tf.ConfigProto(*args, **kwargs)
+    config.gpu_options.allow_growth = True
+    return config
