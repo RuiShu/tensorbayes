@@ -80,3 +80,10 @@ def growth_config(*args, **kwargs):
     config = tf.ConfigProto(*args, **kwargs)
     config.gpu_options.allow_growth = True
     return config
+
+def get_getter(ema):
+    def ema_getter(getter, name, *args, **kwargs):
+        var = getter(name, *args, **kwargs)
+        ema_var = ema.average(var)
+        return ema_var if ema_var else var
+    return ema_getter
