@@ -202,3 +202,20 @@ def gaussian_update(zm1, zv1,
         with tf.name_scope('mean'):
             zm = (zm1 * zp1 + zm2 * zp2) * zv
     return zm, zv
+
+@add_arg_scope
+def concat_img_vec(img,
+                   vec,
+                   scope=None):
+    H, W = img._shape_as_list()[1:-1]
+    V = vec._shape_as_list()[-1]
+
+    with tf.variable_scope(scope, 'concat_img_vec'):
+        # Depth-wise concatenation of vec to img
+        # Replicate vec via broadcasting
+        broadcast = tf.ones([1, H, W, 1])
+        vec = tf.reshape(vec, [-1, 1, 1, V])
+        vec = broadcast * vec
+        output = tf.concat([img, vec], axis=-1)
+
+    return output
