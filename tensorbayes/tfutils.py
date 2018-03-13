@@ -1,4 +1,5 @@
 import tensorflow as tf
+from tensorflow.python.ops.nn_ops import softmax_cross_entropy_with_logits_v2 as softmax_xent
 
 def accuracy(x, y, scope=None):
     with tf.variable_scope(scope, 'acc') as sc:
@@ -8,18 +9,18 @@ def accuracy(x, y, scope=None):
         acc_init = tf.variables_initializer(tf.get_collection('local_variables', sc.name))
     return acc, acc_init
 
-def reduce_sum_sq(x, axis=None, keep_dims=False, name=None):
+def reduce_sum_sq(x, axis=None, keepdims=False, name=None):
     with tf.name_scope(name):
-        return tf.reduce_sum(tf.square(x), axis=axis, keep_dims=keep_dims)
+        return tf.reduce_sum(tf.square(x), axis=axis, keepdims=keepdims)
 
-def reduce_l2_loss(x, axis=None, keep_dims=False, name=None):
+def reduce_l2_loss(x, axis=None, keepdims=False, name=None):
     with tf.name_scope(name):
-        return reduce_sum_sq(x, axis=axis, keep_dims=keep_dims) / 2
+        return reduce_sum_sq(x, axis=axis, keepdims=keepdims) / 2
 
-def log_sum_exp(x, axis=1, keep_dims=False):
-    a = tf.reduce_max(x, axis, keep_dims=True)
-    out = a + tf.log(tf.reduce_sum(tf.exp(x - a), axis, keep_dims=True))
-    if keep_dims:
+def log_sum_exp(x, axis=1, keepdims=False):
+    a = tf.reduce_max(x, axis, keepdims=True)
+    out = a + tf.log(tf.reduce_sum(tf.exp(x - a), axis, keepdims=True))
+    if keepdims:
         return out
     else:
         if type(axis) is list:
@@ -27,10 +28,8 @@ def log_sum_exp(x, axis=1, keep_dims=False):
         else:
             return tf.squeeze(out, [axis])
 
-def softmax_cross_entropy_with_two_logits(logits, labels):
-    p = tf.nn.softmax(labels)
-    log_q = tf.nn.log_softmax(logits)
-    return -tf.reduce_sum(p * log_q, 1)
+def softmax_cross_entropy_with_two_logits(logits=None, labels=None):
+    return softmax_xent(labels=tf.nn.softmax(labels), logits=logits)
 
 def clip_gradients(optimizer, loss, max_clip=0.9, max_norm=4):
     grads_and_vars = optimizer.compute_gradients(loss)
