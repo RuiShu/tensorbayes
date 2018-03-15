@@ -12,4 +12,4 @@ from .tfutils import growth_config, function, TensorDict
 if 'ipykernel' in sys.argv[0]:
     from . import nbutils
 
-__version__ = '0.3.0'
+__version__ = '0.4.0'
