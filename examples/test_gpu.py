@@ -4,6 +4,10 @@ Basic wall-clock test for a generic convolutional neural network
 Tesla K40c:
 Elapsed wall-clock time: 58.0986320972
 Average time per iter: 0.0580986320972
+
+GeForce GTX 1080 Ti:
+Elapsed wall-clock time: 41.549612999
+Average time per iter: 0.041549612999
 """
 
 import numpy as np
