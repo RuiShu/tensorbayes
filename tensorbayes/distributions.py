@@ -19,3 +19,11 @@ def log_normal(x, mu, var, eps=0.0, axis=-1):
         var = tf.add(var, eps, name='clipped_var')
     return -0.5 * tf.reduce_sum(
         tf.log(2 * np.pi) + tf.log(var) + tf.square(x - mu) / var, axis)
+
+def kl_normal(qm, qv, pm, pv, eps=0.0, axis=-1):
+    if eps > 0.0:
+        qv = tf.add(qv, eps, name='clipped_var1')
+        pv = tf.add(qv, eps, name='clipped_var2')
+
+    return 0.5 * tf.reduce_sum(tf.log(pv) - tf.log(qv) + qv / pv +
+                               tf.square(qm - pm) / pv - 1, axis=-1)
