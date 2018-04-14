@@ -86,3 +86,7 @@ def get_getter(ema):
         ema_var = ema.average(var)
         return ema_var if ema_var else var
     return ema_getter
+
+def make_value_summary(tag, val):
+    summary = tf.Summary.Value(tag=tag, simple_value=val)
+    return tf.Summary(value=[summary])
