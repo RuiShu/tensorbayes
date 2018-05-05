@@ -23,7 +23,7 @@ def batch_norm(x,
 
     with tf.variable_scope(scope, 'batch_norm', reuse=reuse):
         def training():
-            m, v = tf.nn.moments(x, range(ndim - 1), keep_dims=True)
+            m, v = tf.nn.moments(x, list(range(ndim - 1)), keep_dims=True)
             update_m = _assign_moving_average(moving_m, m, momentum, 'update_mean')
             update_v = _assign_moving_average(moving_v, v, momentum, 'update_var')
             tf.add_to_collection('update_ops', update_m)

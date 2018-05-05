@@ -7,7 +7,7 @@ def progbar(i, iter_per_epoch, message='', bar_length=50, display=True):
     end_epoch = j == iter_per_epoch
     if display:
         perc = int(100. * j / iter_per_epoch)
-        prog = ''.join(['='] * (bar_length * perc / 100))
+        prog = ''.join(['='] * (bar_length * perc // 100))
         template = "\r[{:" + str(bar_length) + "s}] {:3d}%. {:s}"
         string = template.format(prog, perc, message)
         sys.stdout.write(string)
@@ -15,7 +15,7 @@ def progbar(i, iter_per_epoch, message='', bar_length=50, display=True):
         if end_epoch:
             sys.stdout.write('\r{:100s}\r'.format(''))
             sys.stdout.flush()
-    return end_epoch, (i + 1)/iter_per_epoch
+    return end_epoch, (i + 1) // iter_per_epoch
 
 class FileWriter(object):
     def __init__(self, log_file, args=None,
@@ -52,9 +52,9 @@ class FileWriter(object):
     @staticmethod
     def list_args(args):
         v_dict = vars(args)
-        print '# ArgParse Values:'
+        print('# ArgParse Values:')
         for k in v_dict:
-            print '# {:s}: {:s}'.format(str(k), str(v_dict[k]))
+            print('# {:s}: {:s}'.format(str(k), str(v_dict[k])))
 
     def initialize(self):
         # create header name
@@ -84,4 +84,4 @@ class FileWriter(object):
             print(string)
 
 # Retaining for backwards compatibility
-from tfutils import TensorDict
+from .tfutils import TensorDict
